@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f6feb">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mesures">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Application Mesures V2</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>Application Mesures</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E📐%3C/text%3E%3C/svg%3E">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#d3d9e0;--ac:#1f6feb;--red:#d12c2c;--auto:#e6f6ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1d2127;--tx:#e8ebef;--mu:#9aa5b1;--bd:#363d46;--ac:#6ea8ff;--red:#ff6b6b;--auto:#1f3a29;color-scheme:dark}}
@@ -118,12 +124,33 @@ $('bDel').onclick=()=>{const k=$('recs').value||cur;if(!k)return say('Choisissez
  c.innerHTML='<div style="margin-top:8px">Supprimer « '+k.replace(/</g,'&lt;')+' » ? Cette action est définitive.</div><div class="btns"><button class="r" id="cfY">Oui, supprimer</button><button id="cfN">Annuler</button></div>';
  $('cfN').onclick=()=>{c.innerHTML=''};
  $('cfY').onclick=()=>{c.innerHTML='';const r=R();delete r[k];store.set('recs',JSON.stringify(r));if(cur==k){fill({});cur=null}list();say('Enregistrement « '+k+' » supprimé.')}};
+const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=crcT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+function zip(files){const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+ files.forEach(([n,t])=>{const nb=enc.encode(n),d=enc.encode(t),c=crc(d);
+  const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(12,0x21,true);h.setUint32(14,c,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nb.length,true);
+  parts.push(new Uint8Array(h.buffer),nb,d);
+  const e=new DataView(new ArrayBuffer(46));e.setUint32(0,0x02014b50,true);e.setUint16(4,20,true);e.setUint16(6,20,true);e.setUint16(8,0x0800,true);e.setUint16(14,0x21,true);e.setUint32(16,c,true);e.setUint32(20,d.length,true);e.setUint32(24,d.length,true);e.setUint16(28,nb.length,true);e.setUint32(42,off,true);
+  cd.push(new Uint8Array(e.buffer),nb);off+=30+nb.length+d.length});
+ const cl=cd.reduce((q,x)=>q+x.length,0),z=new DataView(new ArrayBuffer(22));z.setUint32(0,0x06054b50,true);z.setUint16(8,files.length,true);z.setUint16(10,files.length,true);z.setUint32(12,cl,true);z.setUint32(16,off,true);
+ return new Blob([...parts,...cd,new Uint8Array(z.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})}
+const X=t=>String(t).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const col=i=>{let q='';for(i++;i>0;i=Math.floor((i-1)/26))q=String.fromCharCode(65+(i-1)%26)+q;return q};
+const HD='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',RL='http://schemas.openxmlformats.org/officeDocument/2006/relationships',PK='http://schemas.openxmlformats.org/package/2006/relationships';
+const sheetXml=rows=>HD+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+rows.map((r,i)=>'<row r="'+(i+1)+'">'+r.map((v,j)=>v===''?'':'<c r="'+col(j)+(i+1)+'" t="inlineStr"><is><t xml:space="preserve">'+X(v)+'</t></is></c>').join('')+'</row>').join('')+'</sheetData></worksheet>';
+function xlsxBlob(s1,s2){return zip([
+ ['[Content_Types].xml',HD+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'],
+ ['_rels/.rels',HD+'<Relationships xmlns="'+PK+'"><Relationship Id="rId1" Type="'+RL+'/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+ ['xl/workbook.xml',HD+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="'+RL+'"><sheets><sheet name="Constitution" sheetId="1" r:id="rId1"/><sheet name="Mesures" sheetId="2" r:id="rId2"/></sheets></workbook>'],
+ ['xl/_rels/workbook.xml.rels',HD+'<Relationships xmlns="'+PK+'"><Relationship Id="rId1" Type="'+RL+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+RL+'/worksheet" Target="worksheets/sheet2.xml"/></Relationships>'],
+ ['xl/worksheets/sheet1.xml',sheetXml(s1)],['xl/worksheets/sheet2.xml',sheetXml(s2)]])}
 async function xls(){const r=R(),o=gather();if(o.zone)r[o.zone]=o;const rs=Object.values(r);if(!rs.length){say('Aucun enregistrement à exporter.');return false}
- const keys=Object.keys(H),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p)),data=rs.map(x=>{const q={};ks.forEach(k=>q[H[k]]=x[k]||'');return q});return XLSX.utils.json_to_sheet(data,{header:ks.map(k=>H[k])})};
- const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,sheet('c_'),'Constitution');XLSX.utils.book_append_sheet(wb,sheet('m_'),'Mesures');
- const blob=new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
- const fn='mesures_'+[new Date().getFullYear()%100,new Date().getMonth()+1,new Date().getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx';
- try{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return true}catch(e){say('Échec du téléchargement.');return false}}
+ const keys=Object.keys(H),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p));return [ks.map(k=>H[k])].concat(rs.map(x=>ks.map(k=>x[k]||'')))};
+ const blob=xlsxBlob(sheet('c_'),sheet('m_')),n=new Date(),name='mesures_'+[n.getFullYear()%100,n.getMonth()+1,n.getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx';
+ try{const f=new File([blob],name,{type:blob.type});
+  if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return true}catch(e){if(e.name=='AbortError'){say('Export annulé.');return false}}}
+  const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return true}
+ catch(e){say('Échec de l’export.');return false}}
 $('bXls').onclick=async()=>{if($('zone').value.trim())save();if(await xls()){say('Fichier Excel exporté.');$('mm').textContent='';$('mdl').style.display='flex'}};$('bNo').onclick=()=>{$('mdl').style.display='none'};$('bImp').onclick=()=>say('Pas encore');
 $('mail').value=store.get('mail')||'';$('mail').oninput=()=>store.set('mail',$('mail').value.trim());
 $('bSend').onclick=()=>{const a=$('mail').value.trim();if(!a){$('mm').textContent='Saisissez une adresse e-mail.';return}store.set('mail',a);
@@ -150,4 +177,5 @@ $('k_tgt').oninput=()=>{const v=parseInt($('k_tgt').value),o=$('k_sol');if(isNaN
 document.addEventListener('change',calcK);
 try{fill(JSON.parse(store.get('draft')||'{}'))}catch(e){fill({})}
 list();show(+store.get('tab')||0);
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
