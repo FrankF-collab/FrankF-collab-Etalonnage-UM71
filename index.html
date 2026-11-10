@@ -39,6 +39,7 @@ input.red{color:var(--red);font-weight:600}
 .btns .g{background:#1f9d4d;color:#fff;border-color:#1f9d4d}.btns .r{background:#d12c2c;color:#fff;border-color:#d12c2c}
 .sub{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.sub button{padding:8px 14px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;cursor:pointer}.sub button.on{background:var(--ac);color:#fff;border-color:var(--ac)}.sp-hide{display:none!important}
 .btns .bl{background:#1f6feb;color:#fff;border-color:#1f6feb}.btns .dis{opacity:.45;cursor:not-allowed}.btns svg{width:20px;height:20px;vertical-align:middle}
+#t0 .part>h3,#t1 .part>h3{display:none}
 </style></head><body>
 <div class="part" ><h3>Enregistrements</h3>
 <select id="recs"></select>
@@ -145,7 +146,7 @@ function xlsxBlob(s1,s2){return zip([
  ['xl/_rels/workbook.xml.rels',HD+'<Relationships xmlns="'+PK+'"><Relationship Id="rId1" Type="'+RL+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+RL+'/worksheet" Target="worksheets/sheet2.xml"/></Relationships>'],
  ['xl/worksheets/sheet1.xml',sheetXml(s1)],['xl/worksheets/sheet2.xml',sheetXml(s2)]])}
 async function xls(){const r=R(),o=gather();if(o.zone)r[o.zone]=o;const rs=Object.values(r);if(!rs.length){say('Aucun enregistrement à exporter.');return false}
- const keys=Object.keys(H),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p));return [ks.map(k=>H[k])].concat(rs.map(x=>ks.map(k=>x[k]||'')))};
+ const keys=Object.keys(H),short=k=>k=='zone'||k=='pi'?H[k]:k=='m_t1'||k=='m_t2'?'Temps':k=='m_mb'||k=='m_pi_mb'?'Méthode B':k=='m_date'?'Date':k.endsWith('_rouge')?'UR1R2 (rouge)':k.split('_').pop(),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p));return [ks.map(short)].concat(rs.map(x=>ks.map(k=>x[k]||'')))};
  const blob=xlsxBlob(sheet('c_'),sheet('m_')),n=new Date(),name='mesures_'+[n.getFullYear()%100,n.getMonth()+1,n.getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx';
  try{const f=new File([blob],name,{type:blob.type});
   if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return true}catch(e){if(e.name=='AbortError'){say('Export annulé.');return false}}}
