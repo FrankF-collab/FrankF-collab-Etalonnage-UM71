@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Application Mesures V2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#d3d9e0;--ac:#1f6feb;--red:#d12c2c;--auto:#e6f6ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1d2127;--tx:#e8ebef;--mu:#9aa5b1;--bd:#363d46;--ac:#6ea8ff;--red:#ff6b6b;--auto:#1f3a29;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171b;--card:#1d2127;--tx:#e8ebef;--mu:#9aa5b1;--bd:#363d46;--ac:#6ea8ff;--red:#ff6b6b;--auto:#1f3a29;color-scheme:dark}
+*{box-sizing:inherit}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:640px;padding:12px}
+.top{display:flex;gap:10px}.top label{flex:1;font-size:.9rem;color:var(--mu)}
+input,select{width:100%;font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+input[type=checkbox]{width:24px;height:24px;accent-color:var(--ac)}
+.tabs{display:flex;gap:4px;margin:12px 0;overflow-x:auto}
+.tabs button{flex:1;white-space:nowrap;padding:9px 10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tab{display:none}.tab.on{display:block}
+.part{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.part h3{margin:0 0 8px;font-size:1.05rem}.part h4{margin:8px 0 6px;font-size:.95rem;color:var(--mu)}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.row>span.l{width:110px;flex:none}.b{font-size:1.45em;font-weight:600}.sm{font-size:.8em}
+input.red{color:var(--red);font-weight:600}
+.line{display:flex;gap:10px}.line>div{flex:1}.cap{font-size:.9rem;color:var(--mu);margin-bottom:3px}
+.sel{position:relative}.sel .v{display:block;border:1px solid var(--bd);border-radius:8px;padding:8px 10px;min-height:2.5em;background:var(--card);text-align:center;font-weight:600}
+.sel select{position:absolute;inset:0;opacity:0;cursor:pointer}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hd{font-weight:600;text-align:center}
+.auto{background:var(--auto)!important;font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.btns button{padding:8px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;cursor:pointer}
+.btns .p{background:var(--ac);color:#fff;border-color:var(--ac)}
+#st{font-size:.85rem;color:var(--mu);margin-top:6px;min-height:1.2em}
+.btns .g{background:#1f9d4d;color:#fff;border-color:#1f9d4d}.btns .r{background:#d12c2c;color:#fff;border-color:#d12c2c}
+.sub{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.sub button{padding:8px 14px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;cursor:pointer}.sub button.on{background:var(--ac);color:#fff;border-color:var(--ac)}.sp-hide{display:none!important}
+.btns .bl{background:#1f6feb;color:#fff;border-color:#1f6feb}.btns .dis{opacity:.45;cursor:not-allowed}.btns svg{width:20px;height:20px;vertical-align:middle}
+</style></head><body>
+<div class="part" ><h3>Enregistrements</h3>
+<select id="recs"></select>
+<div class="btns"><button class="dis" id="bImp" title="Importer" aria-label="Importer" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13v6h14v-6"/><path d="M12 3v11M8 10l4 4 4-4"/></svg></button><button class="g" id="bSave" title="Enregistrer" aria-label="Enregistrer">💾</button><button id="bOpen" title="Ouvrir" aria-label="Ouvrir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M6 21V3h12v18"/><path d="M6 3l8 2.5v13L6 21z"/><path d="M11.5 12h.01"/></svg></button><button id="bClose" title="Fermer" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16"/><rect x="6" y="3" width="12" height="18"/><path d="M15 12h.01"/></svg></button><button class="bl" id="bXls" title="Exporter" aria-label="Exporter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13v6h14v-6"/><path d="M12 15V4M8 8l4-4 4 4"/></svg></button><button class="r" id="bDel" title="Supprimer" aria-label="Supprimer" style="margin-left:auto">🗑️</button></div><div id="cf"></div>
+<div id="st"></div></div>
+<div class="top">
+<label>Zone n°<input id="zone" autocomplete="off"></label>
+<label>PI n°<input id="pi" autocomplete="off"></label>
+</div>
+<div class="tabs" id="tabs"></div>
+<div id="t0" class="tab"></div><div id="t1" class="tab"></div><div id="t2" class="tab"></div>
+<div id="t3" class="tab"><div class="part"><h3>Condensateur</h3><div class="line"><div><input data-k="k_c1" inputmode="decimal" autocomplete="off"></div><div><input data-k="k_c2" inputmode="decimal" autocomplete="off"></div></div></div><div class="grid"><div class="part"><h3>1er pont</h3><div class="row"><input data-k="k_p1a" inputmode="decimal" autocomplete="off"></div><div class="row"><input data-k="k_p1b" inputmode="decimal" autocomplete="off"></div></div><div class="part"><h3>2ème pont</h3><div class="row"><input data-k="k_p2a" inputmode="decimal" autocomplete="off"></div><div class="row"><input data-k="k_p2b" inputmode="decimal" autocomplete="off"></div></div></div></div>
+
+
+
+<div id="mdl" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center;padding:16px"><div class="part" style="width:100%;max-width:420px;margin:0"><h3>Fichier Excel créé</h3><div class="cap">Envoyer par e-mail à :</div><input id="mail" type="email" placeholder="Adresse e-mail" autocomplete="email"><div class="btns"><button class="p" id="bSend">✉️ Envoyer</button><button id="bNo">Fermer</button></div><div id="mm" style="font-size:.85rem;color:var(--mu);margin-top:6px"></div></div></div>
+<script>
+const $=id=>document.getElementById(id),H={zone:'Zone n°',pi:'PI n°'};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function lab(t,small){return '<span class="b">'+t[0]+'</span>'+(small?'<span class="sm">'+t.slice(1)+'</span>':t.slice(1))}
+const AB=/^(IBE|UBE|UEM|UVE|U0|UVR|UV1V2|UR1R2|IBR|UBR|UPI|IBPI|UBPI|UCI)$/;
+const L=t=>AB.test(t)?lab(t):t;
+function field(k,t,h){H[k]=h;return '<div class="row"><span class="l">'+L(t)+'</span><input data-k="'+k+'" autocomplete="off"></div>'}
+const rows=(p,arr,h)=>arr.map(t=>field(p+'_'+t,t,h+' '+t)).join('');
+const part=(cls,t,body)=>'<div class="part '+cls+'"><h3>'+t+'</h3>'+body+'</div>';
+// Onglet 1
+$('t0').innerHTML=part('','Émission',rows('c_em',['Émetteur','TAd','SVa','BA','CI'],'Constitution Émission'))
++part('','Réception',rows('c_re',['BA','SVa','TAd','Récepteur','CI'],'Constitution Réception'))
++part('pi','PI',rows('c_pi',['TAd','Récepteur'],'Constitution PI'));
+// Onglet 2
+function sel(k,h,opts){H[k]=h;return '<div class="sel"><span class="v"></span><select data-k="'+k+'"><option value=""></option>'+opts.map(o=>'<option value="'+o[0]+'">'+o+'</option>').join('')+'</select></div>'}
+H.m_date='Date';H.m_pi_mb='Méthode B PI';H.m_pi_UR1R2='Mesures PI UR1R2';H.m_pi_rouge='Mesures PI UR1R2 (rouge)';H.m_mb='Méthode B';H.m_re_UR1R2='Mesures Réception UR1R2';H.m_re_rouge='Mesures Réception UR1R2 (rouge)';
+$('t1').innerHTML=part('','Éphéméride','<div class="line"><div><div class="cap">Date</div><input data-k="m_date" inputmode="numeric" placeholder="jj/mm/aaaa" maxlength="10"></div><div><div class="cap">Temps</div>'+sel('m_t1','Temps 1',['Chaud','Temp','Froid'])+'</div><div><div class="cap">Temps</div>'+sel('m_t2','Temps 2',['Sec','Normal','Humide'])+'</div></div>')
++part('','CdV · Émission',rows('m_em',['IBE','UBE','UEM','UVE','U0'],'Mesures Émission'))
++part('','CdV · Réception','<div class="row"><input type="checkbox" data-k="m_mb"><span>Méthode B</span></div>'+rows('m_re',['UVR','UV1V2'],'Mesures Réception')
++'<div class="row"><span class="l">'+lab('UR1R2')+'</span><input data-k="m_re_UR1R2"><input data-k="m_re_rouge" class="red mb" data-for="m_mb" style="display:none"></div>'
++rows('m_re',['IBR','UBR'],'Mesures Réception'))
++part('pi','PI','<div class="row"><input type="checkbox" data-k="m_pi_mb"><span>Méthode B</span></div>'+rows('m_pi',['UPI','UV1V2'],'Mesures PI')+'<div class="row"><span class="l">'+lab('UR1R2')+'</span><input data-k="m_pi_UR1R2"><input data-k="m_pi_rouge" class="red mb" data-for="m_pi_mb" style="display:none"></div>'+rows('m_pi',['IBPI','UBPI'],'Mesures PI'))
++part('','CI',field('m_ci_UCI','UCI','Mesures CI UCI'));
+// Onglet 3
+const bf=(k,kk,h)=>{H[k]=h;return '<div><div class="cap">'+(kk=='K'?lab('KRV',1):lab('UR1R2',1))+'</div><input data-k="'+k+'" inputmode="decimal" autocomplete="off"></div>'};
+$('t2').innerHTML='<div class="part"><div class="grid"><div class="hd">KRV de base</div><div class="hd">KRV final</div>'
++bf('b_kb','K','Méthode B KRV base')+bf('b_kf','K','Méthode B KRV final')+bf('b_ub','U','Méthode B UR1R2 base')+bf('b_uf','U','Méthode B UR1R2 final')+'</div>'
++'<p style="color:var(--mu);font-size:.85rem;margin:10px 0 0">Saisissez 3 valeurs : la 4e est calculée.</p></div>';
+const SUB={t0:[['em','Émission'],['re','Réception'],['pi','PI']],t1:[['eph','📅','Éphéméride'],['em','Emz'],['re','Rez'],['pi','PI'],['ci','CI']]};
+function initSub(t){const box=$(t),ps=[...box.querySelectorAll(':scope>.part,:scope>.wr')],nav=document.createElement('div');nav.className='sub';
+ SUB[t].forEach(([id,n,ti],i)=>{ps[i].dataset.sp=id;const b=document.createElement('button');b.innerHTML=(n=='Emz'||n=='Rez')?lab(n):n;if(ti)b.title=ti;b.dataset.sp=id;if(id=='pi')b.className='pi';b.onclick=()=>subshow(t,id);nav.appendChild(b)});box.prepend(nav);
+ subshow(t,store.get('sub'+t)||SUB[t][0][0])}
+['t0','t1'].forEach(initSub);
+function subshow(t,id){const box=$(t);box.dataset.cur=id;box.querySelectorAll(':scope>.part,:scope>.wr').forEach(p=>p.classList.toggle('sp-hide',p.dataset.sp!=id));box.querySelectorAll('.sub button').forEach(b=>b.classList.toggle('on',b.dataset.sp==id));store.set('sub'+t,id)}
+// Onglets
+const names=['Constitution','Mesures','Méthode "B"','KCA'];
+names.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>show(i);b.id='tb'+i;$('tabs').appendChild(b)});
+function show(i){names.forEach((_,j)=>{$('t'+j).classList.toggle('on',i==j);$('tb'+j).classList.toggle('on',i==j)});store.set('tab',i)}
+function refresh(){const pi=$('pi').value.trim()!=='';document.querySelectorAll('.pi').forEach(e=>e.style.display=pi?'':'none');
+ document.querySelectorAll('.mb').forEach(e=>{e.style.display=document.querySelector('[data-k='+e.dataset.for+']').checked?'':'none'});
+ document.querySelectorAll('.sel').forEach(s=>{s.querySelector('.v').textContent=s.querySelector('select').value});['t0','t1','t3'].forEach(t=>{if(!pi&&$(t).dataset.cur=='pi')subshow(t,SUB[t][0][0])})}
+function calcB(){const el=['b_kb','b_ub','b_kf','b_uf'].map(k=>document.querySelector('[data-k='+k+']'));
+ el.forEach(e=>{if(e.dataset.auto){e.value='';delete e.dataset.auto;e.classList.remove('auto')}});
+ if(el.filter(e=>e.value.trim()!=='').length!==3)return;
+ const m=el.findIndex(e=>e.value.trim()==='');const v=el.map(e=>parseFloat(e.value.replace(',','.')));
+ if(v.some((x,i)=>i!==m&&isNaN(x)))return;const[kb,ub,kf,uf]=v;
+ const r=[kf*ub/uf,kb*uf/kf,kb*uf/ub,ub*kf/kb][m];if(!isFinite(r))return;
+ let t;if(m==1||m==3)t=r.toFixed(3).replace('.',',');else{const f=Math.floor(r+1e-9),d=r-f;t=f+(d<1e-9?'':Math.abs(d-.5)<1e-9?'=':d>.5?'+':'-')}
+ el[m].value=t;el[m].dataset.auto=1;el[m].classList.add('auto')}
+const inputs=()=>[...document.querySelectorAll('[data-k]')];
+function gather(){const o={zone:$('zone').value.trim(),pi:$('pi').value.trim()};inputs().forEach(e=>{o[e.dataset.k]=e.type=='checkbox'?(e.checked?'oui':''):(e.dataset.auto?'':e.value)});return o}
+function fill(o){$('zone').value=o.zone||'';$('pi').value=o.pi||'';inputs().forEach(e=>{const v=o[e.dataset.k]||'';delete e.dataset.auto;e.classList.remove('auto');if(e.type=='checkbox')e.checked=v=='oui';else e.value=v});calcB();calcK();refresh()}
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.dataset&&t.dataset.auto){delete t.dataset.auto;t.classList.remove('auto')}
+ if(t.dataset.k=='m_date'){const d=t.value.replace(/\D/g,'').slice(0,8);t.value=d.replace(/^(\d{2})(\d)/,'$1/$2').replace(/^(\d{2}\/\d{2})(\d)/,'$1/$2')}
+ if(t.dataset.k&&t.dataset.k.startsWith('b_'))calcB();refresh();store.set('draft',JSON.stringify(gather()))});
+document.addEventListener('change',refresh);
+const R=()=>{try{return JSON.parse(store.get('recs')||'{}')}catch(e){return {}}};
+let cur=null;
+const say=m=>{$('st').textContent=m};
+function list(sel){const s=$('recs');s.innerHTML='<option value="">— Enregistrements —</option>';Object.keys(R()).sort().forEach(k=>{const o=document.createElement('option');o.textContent=k;s.appendChild(o)});if(sel)s.value=sel}
+function save(){const o=gather();if(!o.zone){say('Saisissez un Zone n° pour enregistrer.');return false}const r=R();r[o.zone]=o;store.set('recs',JSON.stringify(r));cur=o.zone;list(cur);say('Enregistrement « '+o.zone+' » sauvegardé.');return true}
+$('bSave').onclick=save;
+$('bOpen').onclick=()=>{const k=$('recs').value;if(!k)return say('Choisissez un enregistrement.');fill(R()[k]);cur=k;say('Enregistrement « '+k+' » ouvert.')};
+$('bClose').onclick=()=>{if($('zone').value.trim())save();fill({});cur=null;store.set('draft','{}');$('recs').value='';say('Enregistrement fermé.')};
+$('bDel').onclick=()=>{const k=$('recs').value||cur;if(!k)return say('Choisissez un enregistrement.');const c=$('cf');
+ c.innerHTML='<div style="margin-top:8px">Supprimer « '+k.replace(/</g,'&lt;')+' » ? Cette action est définitive.</div><div class="btns"><button class="r" id="cfY">Oui, supprimer</button><button id="cfN">Annuler</button></div>';
+ $('cfN').onclick=()=>{c.innerHTML=''};
+ $('cfY').onclick=()=>{c.innerHTML='';const r=R();delete r[k];store.set('recs',JSON.stringify(r));if(cur==k){fill({});cur=null}list();say('Enregistrement « '+k+' » supprimé.')}};
+async function xls(){const r=R(),o=gather();if(o.zone)r[o.zone]=o;const rs=Object.values(r);if(!rs.length){say('Aucun enregistrement à exporter.');return false}
+ const keys=Object.keys(H),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p)),data=rs.map(x=>{const q={};ks.forEach(k=>q[H[k]]=x[k]||'');return q});return XLSX.utils.json_to_sheet(data,{header:ks.map(k=>H[k])})};
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,sheet('c_'),'Constitution');XLSX.utils.book_append_sheet(wb,sheet('m_'),'Mesures');
+ const blob=new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+ const d=await claude.use('downloads');if(!d){say('Téléchargement indisponible ici.');return false}
+ try{await d.save({filename:'mesures_'+[new Date().getFullYear()%100,new Date().getMonth()+1,new Date().getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx',data:blob});return true}catch(e){say(e.code=='declined'?'Téléchargement annulé.':'Échec du téléchargement.');return false}}
+$('bXls').onclick=async()=>{if($('zone').value.trim())save();if(await xls()){say('Fichier Excel exporté.');$('mm').textContent='';$('mdl').style.display='flex'}};$('bNo').onclick=()=>{$('mdl').style.display='none'};$('bImp').onclick=()=>say('Pas encore');
+$('mail').value=store.get('mail')||'';$('mail').oninput=()=>store.set('mail',$('mail').value.trim());
+$('bSend').onclick=()=>{const a=$('mail').value.trim();if(!a){$('mm').textContent='Saisissez une adresse e-mail.';return}store.set('mail',a);
+ window.open('mailto:'+a+'?subject='+encodeURIComponent('Mesures'+(cur?' - '+cur:''))+'&body='+encodeURIComponent('Bonjour,\n\nVeuillez trouver ci-joint le fichier Excel exporté (à joindre à ce message).\n'),'_top');$('mm').textContent='Joignez le fichier Excel au message qui s’ouvre.'};
+const POS={A:[0,0],B:[0,56],C:[0,57],D:[0,59],E:[1,0],F:[1,14],G:[1,21],H:[2,0],I:[2,28],K:[2,60],L:[3,0],M:[3,40]};
+['k_c1','k_c2','k_p1a','k_p1b','k_p2a','k_p2b'].forEach(k=>{const i=document.querySelector('[data-k='+k+']'),s=document.createElement('select');s.dataset.k=k;s.innerHTML='<option value=""></option>'+Object.keys(POS).map(l=>'<option>'+l+'</option>').join('');i.replaceWith(s)});
+const res=document.createElement('div');res.className='part';res.innerHTML='<h3>Résultat</h3><input id="k_res" readonly>';$('t3').appendChild(res);
+function calcK(){const g=k=>document.querySelector('[data-k='+k+']').value,a=g('k_c1'),b=g('k_c2'),r=$('k_res');
+ const br=[['k_p1a','k_p1b'],['k_p2a','k_p2b']].map(([x,y])=>[g(x),g(y)]).filter(p=>p[0]&&p[1]);let out=null;
+ const go=(cur,used,seen,s)=>{if(out!==null)return;if(POS[cur][0]==POS[b][0]){out=s+POS[b][1]-POS[cur][1];return}
+  br.forEach((p,i)=>{if(used.includes(i))return;[[p[0],p[1]],[p[1],p[0]]].forEach(([x,y])=>{if(POS[x][0]==POS[cur][0]&&!seen.includes(POS[y][0]))go(y,used.concat(i),seen.concat(POS[y][0]),s+POS[x][1]-POS[cur][1])})})};
+ if(a&&b)go(a,[],[POS[a][0]],0);
+ r.value=!(a&&b)?'':out===null?'Circuit ouvert':out;r.classList.toggle('auto',out!==null)}
+const TL=Object.keys(POS);
+function sums(a,b,br){const out=[];out.ng=[];const go=(cur,used,seen,s,n)=>{if(POS[cur][0]==POS[b][0]){if(used.length==br.length){out.push(s+POS[b][1]-POS[cur][1]);out.ng.push(n+(POS[b][1]<POS[cur][1]))}return}
+ br.forEach((p,i)=>{if(used.includes(i))return;[[p[0],p[1]],[p[1],p[0]]].forEach(([x,y])=>{if(POS[x][0]==POS[cur][0]&&!seen.includes(POS[y][0]))go(y,used.concat(i),seen.concat(POS[y][0]),s+POS[x][1]-POS[cur][1],n+(POS[x][1]<POS[cur][1]))})})};go(a,[],[POS[a][0]],0,0);return out}
+const cp=[];TL.forEach((x,i)=>TL.slice(i+1).forEach(y=>{if(POS[x][0]!=POS[y][0])cp.push([x,y])}));
+function solve(v){const r=[];TL.forEach(a=>TL.forEach(b=>{if(a==b)return;const t=br=>{const al=[a,b].concat(br.flat());if(new Set(al).size==al.length){const q=sums(a,b,br),m=Math.min(99,...q.map((z,i)=>z==v?q.ng[i]:99));if(m<99)r.push({a,b,br,ng:m})}};t([]);cp.forEach((p,i)=>{t([p]);for(let j=i+1;j<cp.length;j++)t([p,cp[j]])})}));return r.sort((x,y)=>(TL.indexOf(x.a)>TL.indexOf(x.b))-(TL.indexOf(y.a)>TL.indexOf(y.b))||x.ng-y.ng||x.br.length-y.br.length)}
+const sp=document.createElement('div');sp.className='part';sp.innerHTML='<input id="k_tgt" placeholder="Valeur recherchée" autocomplete="off"><div id="k_sol" style="margin-top:8px;font-size:.9rem"></div>';$('t3').appendChild(sp);
+const wA=document.createElement('div'),wB=document.createElement('div');wA.className=wB.className='wr';[...$('t3').children].forEach(c=>(c===sp?wB:wA).appendChild(c));$('t3').append(wA,wB);
+SUB.t3=[['bo','Bornes'],['kca','KCA']];initSub('t3');
+$('k_tgt').oninput=()=>{const v=parseInt($('k_tgt').value),o=$('k_sol');if(isNaN(v)){o.textContent='';return}const r=solve(v);
+ o.innerHTML=r.length?'<div>'+r.length+' solution(s), les plus simples d’abord :</div>'+r.slice(0,10).map(s=>'<div>Condensateur '+s.a+' → '+s.b+(s.br.length?' · ponts '+s.br.map(p=>p.join('–')).join(', '):' · sans pont')+'</div>').join(''):'Aucune solution.'};
+document.addEventListener('change',calcK);
+try{fill(JSON.parse(store.get('draft')||'{}'))}catch(e){fill({})}
+list();show(+store.get('tab')||0);
+</script></body></html>
