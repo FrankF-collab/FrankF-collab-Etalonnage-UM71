@@ -122,8 +122,8 @@ async function xls(){const r=R(),o=gather();if(o.zone)r[o.zone]=o;const rs=Objec
  const keys=Object.keys(H),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p)),data=rs.map(x=>{const q={};ks.forEach(k=>q[H[k]]=x[k]||'');return q});return XLSX.utils.json_to_sheet(data,{header:ks.map(k=>H[k])})};
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,sheet('c_'),'Constitution');XLSX.utils.book_append_sheet(wb,sheet('m_'),'Mesures');
  const blob=new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
- const d=await claude.use('downloads');if(!d){say('Téléchargement indisponible ici.');return false}
- try{await d.save({filename:'mesures_'+[new Date().getFullYear()%100,new Date().getMonth()+1,new Date().getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx',data:blob});return true}catch(e){say(e.code=='declined'?'Téléchargement annulé.':'Échec du téléchargement.');return false}}
+ const fn='mesures_'+[new Date().getFullYear()%100,new Date().getMonth()+1,new Date().getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx';
+ try{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return true}catch(e){say('Échec du téléchargement.');return false}}
 $('bXls').onclick=async()=>{if($('zone').value.trim())save();if(await xls()){say('Fichier Excel exporté.');$('mm').textContent='';$('mdl').style.display='flex'}};$('bNo').onclick=()=>{$('mdl').style.display='none'};$('bImp').onclick=()=>say('Pas encore');
 $('mail').value=store.get('mail')||'';$('mail').oninput=()=>store.set('mail',$('mail').value.trim());
 $('bSend').onclick=()=>{const a=$('mail').value.trim();if(!a){$('mm').textContent='Saisissez une adresse e-mail.';return}store.set('mail',a);
