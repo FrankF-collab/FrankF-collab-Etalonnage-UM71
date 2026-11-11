@@ -111,6 +111,7 @@ function fill(o){$('zone').value=o.zone||'';$('pi').value=o.pi||'';inputs().forE
 document.addEventListener('input',e=>{const t=e.target;
  if(t.dataset&&t.dataset.auto){delete t.dataset.auto;t.classList.remove('auto')}
  if(t.dataset.k=='m_date'){const d=t.value.replace(/\D/g,'').slice(0,8);t.value=d.replace(/^(\d{2})(\d)/,'$1/$2').replace(/^(\d{2}\/\d{2})(\d)/,'$1/$2')}
+ if(t.dataset.k&&NUMK(t.dataset.k)){let v=t.value.replace(/[^0-9.,]/g,'');const i=v.search(/[.,]/);if(i>=0)v=v.slice(0,i+1)+v.slice(i+1).replace(/[.,]/g,'').slice(0,3);t.value=v}
  if(t.dataset.k&&t.dataset.k.startsWith('b_'))calcB();refresh();store.set('draft',JSON.stringify(gather()))});
 document.addEventListener('change',refresh);
 const R=()=>{try{return JSON.parse(store.get('recs')||'{}')}catch(e){return {}}};
@@ -138,16 +139,25 @@ function zip(files){const enc=new TextEncoder(),parts=[],cd=[];let off=0;
 const X=t=>String(t).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const col=i=>{let q='';for(i++;i>0;i=Math.floor((i-1)/26))q=String.fromCharCode(65+(i-1)%26)+q;return q};
 const HD='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',RL='http://schemas.openxmlformats.org/officeDocument/2006/relationships',PK='http://schemas.openxmlformats.org/package/2006/relationships';
-const sheetXml=rows=>HD+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+rows.map((r,i)=>'<row r="'+(i+1)+'">'+r.map((v,j)=>v===''?'':'<c r="'+col(j)+(i+1)+'" t="inlineStr"><is><t xml:space="preserve">'+X(v)+'</t></is></c>').join('')+'</row>').join('')+'</sheetData></worksheet>';
+const NOK=['m_date','m_t1','m_t2','m_mb','m_pi_mb'];
+const NUMK=k=>k.startsWith('m_')&&!NOK.includes(k);
+const MORD=['m_date','m_t1','m_t2','m_em_IBE','m_em_UBE','m_em_UEM','m_em_UVE','m_em_U0','m_mb','m_re_UVR','m_re_UV1V2','m_re_UR1R2','m_re_rouge','m_re_IBR','m_re_UBR','m_pi_mb','m_pi_UPI','m_pi_UV1V2','m_pi_UR1R2','m_pi_rouge','m_pi_IBPI','m_pi_UBPI','m_ci_UCI'];
+const grp=k=>k=='zone'||k=='pi'?'z':['m_date','m_t1','m_t2'].includes(k)?'eph':k=='m_mb'?'m_re':k.split('_').slice(0,2).join('_');
+const STY=HD+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thick"><color auto="1"/></left><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+const sheetXml=([rows,bd,nm])=>HD+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="'+bd.length+'" width="13" customWidth="1"/></cols><sheetData>'+rows.map((r,i)=>'<row r="'+(i+1)+'">'+r.map((v,j)=>{const st=(i==0?2:0)+(bd[j]?1:0),a=st?' s="'+st+'"':'',ref=col(j)+(i+1);if(v==='')return st?'<c r="'+ref+'"'+a+'/>':'';if(i>0&&nm[j]&&/^\d+([.,]\d{1,3})?$/.test(v))return '<c r="'+ref+'"'+a+'><v>'+v.replace(',','.')+'</v></c>';return '<c r="'+ref+'"'+a+' t="inlineStr"><is><t xml:space="preserve">'+X(v)+'</t></is></c>'}).join('')+'</row>').join('')+'</sheetData></worksheet>';
 function xlsxBlob(s1,s2){return zip([
- ['[Content_Types].xml',HD+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'],
+ ['[Content_Types].xml',HD+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
  ['_rels/.rels',HD+'<Relationships xmlns="'+PK+'"><Relationship Id="rId1" Type="'+RL+'/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
  ['xl/workbook.xml',HD+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="'+RL+'"><sheets><sheet name="Constitution" sheetId="1" r:id="rId1"/><sheet name="Mesures" sheetId="2" r:id="rId2"/></sheets></workbook>'],
- ['xl/_rels/workbook.xml.rels',HD+'<Relationships xmlns="'+PK+'"><Relationship Id="rId1" Type="'+RL+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+RL+'/worksheet" Target="worksheets/sheet2.xml"/></Relationships>'],
- ['xl/worksheets/sheet1.xml',sheetXml(s1)],['xl/worksheets/sheet2.xml',sheetXml(s2)]])}
+ ['xl/_rels/workbook.xml.rels',HD+'<Relationships xmlns="'+PK+'"><Relationship Id="rId1" Type="'+RL+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+RL+'/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="'+RL+'/styles" Target="styles.xml"/></Relationships>'],
+ ['xl/styles.xml',STY],['xl/worksheets/sheet1.xml',sheetXml(s1)],['xl/worksheets/sheet2.xml',sheetXml(s2)]])}
+function buildXlsx(rs){const keys=Object.keys(H).filter(k=>!k.startsWith('m_')).concat(MORD),
+ short=k=>k=='zone'||k=='pi'?H[k]:k=='m_t1'||k=='m_t2'?'Temps':k=='m_mb'||k=='m_pi_mb'?'Méthode B':k=='m_date'?'Date':k.endsWith('_rouge')?'UR1R2 (rouge)':k.split('_').pop(),
+ mk=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p)),g=ks.map(grp);return [[ks.map(short)].concat(rs.map(x=>ks.map(k=>{let v=x[k]||'';if(NUMK(k))v=v.replace(/[.,]$/,'');return v}))),ks.map((k,j)=>j>0&&g[j]!=g[j-1]),ks.map(NUMK)]};
+ return xlsxBlob(mk('c_'),mk('m_'))}
+const xname=z=>{const n=new Date(),q=z.replace(/[\\\/:*?"<>|\s]+/g,'-');return 'mesures_'+(q?q+'_':'')+[n.getFullYear()%100,n.getMonth()+1,n.getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx'};
 async function xls(){const r=R(),o=gather();if(o.zone)r[o.zone]=o;const rs=Object.values(r);if(!rs.length){say('Aucun enregistrement à exporter.');return false}
- const keys=Object.keys(H),short=k=>k=='zone'||k=='pi'?H[k]:k=='m_t1'||k=='m_t2'?'Temps':k=='m_mb'||k=='m_pi_mb'?'Méthode B':k=='m_date'?'Date':k.endsWith('_rouge')?'UR1R2 (rouge)':k.split('_').pop(),sheet=p=>{const ks=keys.filter(k=>k=='zone'||k=='pi'||k.startsWith(p));return [ks.map(short)].concat(rs.map(x=>ks.map(k=>x[k]||'')))};
- const blob=xlsxBlob(sheet('c_'),sheet('m_')),n=new Date(),name='mesures_'+[n.getFullYear()%100,n.getMonth()+1,n.getDate()].map(x=>String(x).padStart(2,'0')).join('-')+'.xlsx';
+ const blob=buildXlsx(rs),name=xname(o.zone);
  try{const f=new File([blob],name,{type:blob.type});
   if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return true}catch(e){if(e.name=='AbortError'){say('Export annulé.');return false}}}
   const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return true}
@@ -176,6 +186,7 @@ SUB.t3=[['bo','Bornes'],['kca','KCA']];initSub('t3');
 $('k_tgt').oninput=()=>{const v=parseInt($('k_tgt').value),o=$('k_sol');if(isNaN(v)){o.textContent='';return}const r=solve(v);
  o.innerHTML=r.length?'<div>'+r.length+' solution(s), les plus simples d’abord :</div>'+r.slice(0,10).map(s=>'<div>Condensateur '+s.a+' → '+s.b+(s.br.length?' · ponts '+s.br.map(p=>p.join('–')).join(', '):' · sans pont')+'</div>').join(''):'Aucune solution.'};
 document.addEventListener('change',calcK);
+inputs().forEach(e=>{if(NUMK(e.dataset.k))e.setAttribute('inputmode','decimal')});
 try{fill(JSON.parse(store.get('draft')||'{}'))}catch(e){fill({})}
 list();show(+store.get('tab')||0);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
