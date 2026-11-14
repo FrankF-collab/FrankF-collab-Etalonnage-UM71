@@ -219,12 +219,31 @@ function patchSheet(x,ss,xfs,o){const V={};Object.keys(FM).forEach(k=>{const v=(
    if(/<f[\s>\/]/.test(m[2]||''))return;
    x=x.replace(m[0],()=>'<c r="'+ref+'"'+m[1].replace(/\st="[^"]*"/,'')+'/>')});
  if(bad.length)throw new Error('cellule(s) verrouillée(s) ou introuvable(s) : '+bad.join(', '));
+ TR=['krv',1,2,3,4,5,6].flatMap(i=>[['kb','km'],['pb','pm']].filter(([b,m])=>V[FM[m+'_'+i]]).flatMap(([b])=>i=='krv'?{kb:['BL116','BS40'],pb:['CH116','BS43']}[b]:[FR[b+'_'+i]]));
  return cacheFix(x,ss)}
+// Trait rouge (dessin) sur les réglages « de base » quand une valeur Méthode B est écrite en face
+let TR=[];
+async function addTraits(wb,sp,refs,sx){
+ const rp=sp.replace(/worksheets\/([^\/]+)$/,'worksheets/_rels/$1.rels');if(!wb.get(rp))return;
+ const rel=((await wb.tx(rp)).match(/<Relationship\b[^>]*Type="[^"]*\/drawing"[^>]*>/)||[''])[0],tg=(rel.match(/Target="([^"]*)"/)||[])[1];if(!tg)return;
+ const dp=tg[0]=='/'?tg.slice(1):'xl/'+tg.replace(/^\.\.\//,''),df=wb.get(dp);if(!df)return;
+ let d=await wb.tx(dp);
+ d=d.replace(/<xdr:twoCellAnchor\b(?:(?!<xdr:twoCellAnchor\b)[\s\S])*?name="KRVtrait_(?:(?!<xdr:twoCellAnchor\b)[\s\S])*?<\/xdr:twoCellAnchor>/g,'');
+ const cw=n=>{const m=[...sx.matchAll(/<col min="(\d+)" max="(\d+)" width="([\d.]+)"/g)].find(m=>n>=+m[1]&&n<=+m[2]);return Math.round((m?+m[3]:8.43)*7)*9525};
+ const ci=c=>c.split('').reduce((n,ch)=>n*26+ch.charCodeAt(0)-64,0)-1;
+ let id=Math.max(1,...[...d.matchAll(/<xdr:cNvPr id="(\d+)"/g)].map(m=>+m[1]));
+ const t=refs.map(ref=>{const m=ref.match(/^([A-Z]+)(\d+)$/),mg=sx.match(new RegExp('<mergeCell ref="'+ref+':([A-Z]+)(\\d+)"')),
+  c0=ci(m[1]),c1=ci(mg?mg[1]:m[1])+1,r0=+m[2],r1=mg?+mg[2]:r0,rh=n=>+((sx.match(new RegExp('<row r="'+n+'"[^>]*?\\sht="([\\d.]+)"'))||[])[1]||15);
+  let tot=0,r=r0;for(let k=r0;k<=r1;k++)tot+=rh(k);const sm=sx.match(new RegExp('<c r="'+ref+'"[^>]*?\\ss="(\\d+)"')),va=(((wb.xfs||[])[sm?+sm[1]:-1]||'').match(/vertical="(\w+)"/)||[])[1]||'bottom';let q=tot*({top:.35,center:.5,bottom:.62}[va]||.5);while(r<r1&&q>rh(r)){q-=rh(r);r++}
+  const o=Math.round(q*12700),rw='<xdr:row>'+(r-1)+'</xdr:row><xdr:rowOff>'+o+'</xdr:rowOff>',Wsp=Array.from({length:c1-c0},(_,k)=>cw(c0+k+1)).reduce((u,v)=>u+v,0),L=Math.round((cw(66)+cw(67))*2/3*(/^BS4[03]$/.test(ref)?2/3:1)+(/^BS4[03]$/.test(ref)?28575:0)),ha=(((wb.xfs||[])[sm?+sm[1]:-1]||'').match(/horizontal="(\w+)"/)||[])[1],ps=e=>{let k=c0;while(e>=cw(k+1)){e-=cw(k+1);k++}return '<xdr:col>'+k+'</xdr:col><xdr:colOff>'+Math.round(e)+'</xdr:colOff>'},st0=ha=='right'?Wsp-L-9525:ha=='left'?9525:(Wsp-L)/2;
+  return '<xdr:twoCellAnchor editAs="oneCell"><xdr:from>'+ps(st0)+rw+'</xdr:from><xdr:to>'+ps(st0+L)+rw+'</xdr:to><xdr:cxnSp macro=""><xdr:nvCxnSpPr><xdr:cNvPr id="'+(++id)+'" name="KRVtrait_'+ref+'"/><xdr:cNvCxnSpPr/></xdr:nvCxnSpPr><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="19050"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></a:ln></xdr:spPr></xdr:cxnSp><xdr:clientData/></xdr:twoCellAnchor>'}).join('');
+ if(t)d=d.replace('</xdr:wsDr>',()=>t+'</xdr:wsDr>');
+ await put(df,d)}
 async function fiche(o){if(typeof DecompressionStream=='undefined')throw new Error('navigateur trop ancien');
- const wb=await openWB(b64(TPL)),p='xl/worksheets/sheet1.xml';await put(wb.get(p),patchSheet(await wb.tx(p),wb.ss,wb.xfs,o));
+ const wb=await openWB(b64(TPL)),p='xl/worksheets/sheet1.xml';const sx0=await wb.tx(p);await put(wb.get(p),patchSheet(sx0,wb.ss,wb.xfs,o));await addTraits(wb,p,TR,sx0);
  await put(wb.get('xl/workbook.xml'),calcFix(await wb.tx('xl/workbook.xml')));return writeZip(wb.L)}
 async function exportWB(id){const base=await idbGet(id);if(!base)return null;const wb=await openWB(new Uint8Array(base));
- for(const r of Object.values(R()).filter(r=>r.src&&r.src.wb==id)){const f=wb.get(r.src.sh);if(!f)continue;try{await put(f,patchSheet(await wb.tx(r.src.sh),wb.ss,wb.xfs,r))}catch(e){throw new Error('« '+recName(r)+' » : '+e.message)}}
+ for(const r of Object.values(R()).filter(r=>r.src&&r.src.wb==id)){const f=wb.get(r.src.sh);if(!f)continue;try{const sx0=await wb.tx(r.src.sh);await put(f,patchSheet(sx0,wb.ss,wb.xfs,r));await addTraits(wb,r.src.sh,TR,sx0)}catch(e){throw new Error('« '+recName(r)+' » : '+e.message)}}
  await put(wb.get('xl/workbook.xml'),calcFix(await wb.tx('xl/workbook.xml')));return writeZip(wb.L)}
 const idb=()=>new Promise((ok,ko)=>{const r=indexedDB.open('mesures',1);r.onupgradeneeded=()=>r.result.createObjectStore('wb');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
 const idbSet=async(k,v)=>{const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction('wb','readwrite');t.objectStore('wb').put(v,k);t.oncomplete=ok;t.onerror=()=>ko(t.error)})};
