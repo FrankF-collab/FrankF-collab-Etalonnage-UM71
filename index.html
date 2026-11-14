@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><meta name="theme-color" content="#1f6feb"><title>Application Mesures V4</title>
+<link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><meta name="theme-color" content="#1f6feb"><title>Application Mesures V4</title>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#d3d9e0;--ac:#1f6feb;--red:#d12c2c;--auto:#e6f6ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1d2127;--tx:#e8ebef;--mu:#9aa5b1;--bd:#363d46;--ac:#6ea8ff;--red:#ff6b6b;--auto:#1f3a29;color-scheme:dark}}
@@ -39,6 +39,7 @@ input.red{color:var(--red);font-weight:600}
 .dup{color:var(--red)!important;border-color:var(--red)!important;font-weight:600}
 .kg.rd input,.kg.rd select{color:var(--red);font-weight:600}
 .sub .cam{margin-left:auto;padding:8px 12px}.sub svg{width:20px;height:20px;vertical-align:middle}
+#wm{position:fixed;left:50%;width:min(100%,640px);transform:translateX(-50%);top:0;bottom:0;background:url(filigrane.svg) center/contain no-repeat;opacity:.13;pointer-events:none;z-index:5}:root[data-theme="dark"] #wm{opacity:.2}
 </style></head><body>
 <div class="part" ><h3>Enregistrements</h3>
 <select id="recs"></select>
@@ -57,6 +58,7 @@ input.red{color:var(--red);font-weight:600}
 
 
 <div id="mdl" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:center;justify-content:center;padding:16px"><div class="part" style="width:100%;max-width:420px;margin:0"><h3>Fichier Excel créé</h3><div class="cap">Envoyer par e-mail à :</div><input id="mail" type="email" placeholder="Adresse e-mail" autocomplete="email"><div class="btns"><button class="p" id="bSend">✉️ Envoyer</button><button id="bNo">Fermer</button></div><div id="mm" style="font-size:.85rem;color:var(--mu);margin-top:6px"></div></div></div>
+<div id="wm"></div>
 <script>
 const $=id=>document.getElementById(id);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
@@ -301,5 +303,6 @@ async function capSend(){say('Préparation de la capture…');
  say(saved?'Image enregistrée : joignez-la au message qui s’ouvre.':'Message ouvert, mais l’image n’a pas pu être enregistrée.')}
 {const b=document.createElement('button');b.id='bCam';b.className='cam';b.title='Envoyer une capture Émission + Réception';b.setAttribute('aria-label','Envoyer une capture');b.innerHTML=CAMSVG;b.onclick=capSend;$('t0').querySelector('.sub').appendChild(b)}
 list();show(Math.min(+store.get('tab')||0,names.length-1));
+const wmPos=()=>{const t=$('tabs'),w=$('wm');if(t&&w)w.style.top=Math.max(0,t.getBoundingClientRect().bottom+4)+'px'};addEventListener('scroll',wmPos,{passive:true});addEventListener('resize',wmPos);wmPos();setTimeout(wmPos,300);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
